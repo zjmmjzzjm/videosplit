@@ -26,19 +26,19 @@ python3 split_video.py <input_file> <chunk_size>
 
 ### Arguments
 
-- `input_file`: Path to the video file you want to split.
+- `input_path`: Path to the video file OR directory containing video files you want to split.
 - `chunk_size`: The target maximum size for each chunk. Supports units like `MB`, `GB`.
 
 ### Examples
 
-Split a video into 2GB chunks:
+Split a single video into 2GB chunks:
 ```bash
 python3 split_video.py my_large_video.mp4 2GB
 ```
 
-Split a video into 500MB chunks:
+Split all videos in a directory into 500MB chunks:
 ```bash
-python3 split_video.py vacation.mov 500MB
+python3 split_video.py /path/to/videos 500MB
 ```
 
 ## Output

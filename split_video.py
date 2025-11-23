@@ -139,11 +139,41 @@ def split_video(input_file, chunk_size_str):
         print("Error: ffmpeg not found. Please ensure ffmpeg is installed.")
         sys.exit(1)
 
+def process_input(input_path, chunk_size_str):
+    """Processes a file or a directory of video files."""
+    if not os.path.exists(input_path):
+        print(f"Error: Path '{input_path}' not found.")
+        sys.exit(1)
+
+    if os.path.isfile(input_path):
+        split_video(input_path, chunk_size_str)
+    elif os.path.isdir(input_path):
+        video_extensions = {".mp4", ".mov", ".mkv", ".avi", ".flv", ".wmv", ".m4v", ".mpg", ".mpeg"}
+        files_found = False
+        for root, _, files in os.walk(input_path):
+            for file in files:
+                if os.path.splitext(file)[1].lower() in video_extensions:
+                    files_found = True
+                    file_path = os.path.join(root, file)
+                    print(f"\nProcessing: {file_path}")
+                    try:
+                        split_video(file_path, chunk_size_str)
+                    except SystemExit:
+                        print(f"Skipping {file_path} due to error.")
+                    except Exception as e:
+                        print(f"An unexpected error occurred while processing {file_path}: {e}")
+        
+        if not files_found:
+            print(f"No video files found in directory '{input_path}'.")
+    else:
+        print(f"Error: '{input_path}' is not a valid file or directory.")
+        sys.exit(1)
+
 if __name__ == "__main__":
-    parser = argparse.ArgumentParser(description="Split a video file into smaller chunks based on target size (lossless).")
-    parser.add_argument("input_file", help="Path to the input video file")
+    parser = argparse.ArgumentParser(description="Split a video file or all videos in a directory into smaller chunks based on target size (lossless).")
+    parser.add_argument("input_path", help="Path to the input video file or directory")
     parser.add_argument("chunk_size", help="Target chunk size (e.g., '2GB', '500MB')")
     
     args = parser.parse_args()
     
-    split_video(args.input_file, args.chunk_size)
+    process_input(args.input_path, args.chunk_size)
