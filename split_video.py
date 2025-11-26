@@ -122,6 +122,7 @@ def split_video(input_file, chunk_size_str):
         "ffmpeg",
         "-i", input_file,
         "-c", "copy",
+        "-map_metadata", "0",
         "-f", "segment",
         "-segment_time", str(segment_time),
         "-reset_timestamps", "1",
@@ -132,6 +133,40 @@ def split_video(input_file, chunk_size_str):
     try:
         subprocess.run(cmd, check=True)
         print(f"\nSuccess! Video split into chunks in '{output_dir}'")
+        
+        # Sync filesystem timestamps
+        print("Syncing filesystem timestamps...")
+        stat = os.stat(input_file)
+        atime = stat.st_atime
+        mtime = stat.st_mtime
+        
+        # Get creation time (macOS specific)
+        creation_time_str = None
+        if sys.platform == 'darwin':
+            try:
+                # st_birthtime is available on macOS
+                birthtime = stat.st_birthtime
+                # Format for SetFile: "mm/dd/yyyy hh:mm:ss"
+                import time
+                creation_time_str = time.strftime("%m/%d/%Y %H:%M:%S", time.localtime(birthtime))
+            except AttributeError:
+                pass
+
+        for filename in os.listdir(output_dir):
+            if filename.startswith(name + "_part") and filename.endswith(ext):
+                file_path = os.path.join(output_dir, filename)
+                
+                # Set modification and access time
+                os.utime(file_path, (atime, mtime))
+                
+                # Set creation time on macOS
+                if creation_time_str:
+                    try:
+                        subprocess.run(["SetFile", "-d", creation_time_str, file_path], check=True, capture_output=True)
+                    except (subprocess.CalledProcessError, FileNotFoundError):
+                        # SetFile might not be installed or failed, ignore
+                        pass
+                        
     except subprocess.CalledProcessError as e:
         print(f"Error running ffmpeg: {e}")
         sys.exit(1)
